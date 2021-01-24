@@ -2,22 +2,10 @@
 
 # Some useful functions used to crawl TWSE data
 
-import os, io
+import os, io, sqlite3
 from datetime import datetime, timedelta
 import requests as req
 import pandas as pd
-
-
-def saveData(data: pd.DataFrame, filename: str, overwrite: bool = False) -> bool:
-    ''' save a DataFrame as csv file and return wheather it is successfully saved '''
-    
-    if type(data) != pd.DataFrame:
-        return False
-    
-    filename = os.path.splitext(filename)[0] + '.csv'
-    if overwrite or not os.path.exists(filename):
-        data.to_csv(filename, encoding='utf-8-sig')
-    return True
 
 
 def getDailyPrice(date: str = 'yesterday') -> pd.DataFrame:
@@ -72,6 +60,39 @@ def getMonthlyReport(year: int, month: int) -> pd.DataFrame:
     df.dropna(axis=1, how='all', inplace=True)
 
     return df
+
+
+def saveDataCSV(data: pd.DataFrame, filename: str, overwrite: bool = True) -> bool:
+    ''' save a DataFrame as csv file and return wheather it is successfully saved '''
+    
+    if type(data) != pd.DataFrame:
+        return False
+    
+    filename = os.path.splitext(filename)[0] + '.csv'
+    if overwrite or not os.path.exists(filename):
+        data.to_csv(filename, encoding='utf-8-sig')
+    return True
+
+
+def saveDataSQL(data: pd.DataFrame, filename: str, tablename: str, if_exists: str = 'replace'):
+    ''' save a DataFrame as csv file and return wheather it is successfully saved '''
+
+    if type(data) != pd.DataFrame:
+        return False
+
+    filename = os.path.splitext(filename)[0] + '.db'
+    con = sqlite3.connect(filename)
+    data.to_sql(tablename, con, if_exists=if_exists)
+    con.close()
+    return True
+
+
+def loadDataSQL(fileName: str, tablename: str):
+    ''' load the table from the database file and return a DataFrame '''
+
+    con = sqlite3.connect(fileName)
+    return pd.read_sql(f'SELECT * FROM {tablename}', con, index_col=['stockID'])
+    con.close()
 
 
 if __name__ == '__main__':
