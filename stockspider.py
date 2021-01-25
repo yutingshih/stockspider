@@ -3,18 +3,18 @@
 # Some useful functions used to crawl TWSE data
 
 import os, io, sqlite3
-from datetime import datetime, timedelta
+from datetime import date, timedelta
 import requests as req
 import pandas as pd
 
 
-def getDailyPrice(date: str = 'yesterday') -> pd.DataFrame:
+def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     ''' Get daily price from www.twse.com.tw and return a DataFrame '''
 
-    if date == 'yesterday':
-        date = (datetime.now() - timedelta(days=1)).strftime('%Y%m%d')
-    elif date == 'today':
-        date = datetime.now().strftime('%Y%m%d')
+    if day == 'yesterday':
+        day = (date.today() - timedelta(days=1)).strftime('%Y%m%d')
+    elif day == 'today':
+        day = date.today().strftime('%Y%m%d')
     
     res = req.get(f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=html&date={date}&type=ALLBUT0999')
     res.encoding = 'utf-8'
@@ -27,7 +27,7 @@ def getDailyPrice(date: str = 'yesterday') -> pd.DataFrame:
     if type(df.columns) == pd.MultiIndex:
         df.columns = [col[-1] for col in df.columns]
     
-    df['date'] = pd.to_datetime(date)
+    df['date'] = pd.to_datetime(day)
     df.rename(columns={'證券代號': 'stockID'}, inplace=True)
     df.set_index(['stockID', 'date'], inplace=True)
     
