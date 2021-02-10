@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Some useful functions used to crawl TWSE data
 
@@ -6,7 +7,8 @@ import os, io, sqlite3
 from datetime import date, timedelta
 import requests as req
 import pandas as pd
-
+from typing import Union, List
+NumType = Union[int, str]
 
 def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     ''' Get daily price from www.twse.com.tw and return a DataFrame '''
@@ -28,6 +30,7 @@ def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
         df.columns = [col[-1] for col in df.columns]
     
     df['date'] = pd.to_datetime(day)
+    df['date'] = df['date'].dt.date
     df.rename(columns={'證券代號': 'stockID'}, inplace=True)
     df.set_index(['stockID', 'date'], inplace=True)
     
@@ -61,6 +64,13 @@ def getMonthlyReport(year: int, month: int) -> pd.DataFrame:
 
     return df
 
+def getFinancialReport(stockID: NumType, year: NumType, season: NumType) -> List[pd.DataFrame]:
+    year %= 1911
+    form_data = parseFormData(f'step=1&DEBUG=&CO_ID={stockID}&SYEAR={year}&SSEASON={season}&REPORT_ID=C')
+
+    res = req.post('https://mops.twse.com.tw/server-java/t164sb01', data=form_data)
+    res.encoding = 'big5'
+    return pd.read_html(res.text)
 
 def saveDataCSV(data: pd.DataFrame, filename: str, overwrite: bool = True) -> bool:
     ''' save a DataFrame as csv file and return wheather it is successfully saved '''
@@ -74,7 +84,7 @@ def saveDataCSV(data: pd.DataFrame, filename: str, overwrite: bool = True) -> bo
     return True
 
 
-def saveDataSQL(data: pd.DataFrame, filename: str, tablename: str, if_exists: str = 'replace'):
+def saveDataSQL(data: pd.DataFrame, filename: str, tablename: str, if_exists: str = 'replace') -> bool:
     ''' save a DataFrame as csv file and return wheather it is successfully saved '''
 
     if type(data) != pd.DataFrame:
@@ -87,12 +97,16 @@ def saveDataSQL(data: pd.DataFrame, filename: str, tablename: str, if_exists: st
     return True
 
 
-def loadDataSQL(fileName: str, tablename: str):
+def loadDataSQL(fileName: str, tablename: str) -> pd.DataFrame:
     ''' load the table from the database file and return a DataFrame '''
 
     con = sqlite3.connect(fileName)
     return pd.read_sql(f'SELECT * FROM {tablename}', con, index_col=['stockID'])
     con.close()
+
+
+def parseFormData(src: str) -> dict:
+    return dict([prm.split('=') for prm in src.split('&')])
 
 
 if __name__ == '__main__':
