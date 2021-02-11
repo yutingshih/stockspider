@@ -18,7 +18,7 @@ def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     elif day == 'today':
         day = date.today().strftime('%Y%m%d')
     
-    res = req.get(f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=html&date={date}&type=ALLBUT0999')
+    res = req.get(f'https://www.twse.com.tw/exchangeReport/MI_INDEX?response=html&date={day}&type=ALLBUT0999')
     res.encoding = 'utf-8'
 
     try:
@@ -101,7 +101,7 @@ def loadDataSQL(fileName: str, tablename: str) -> pd.DataFrame:
     ''' load the table from the database file and return a DataFrame '''
 
     con = sqlite3.connect(fileName)
-    return pd.read_sql(f'SELECT * FROM {tablename}', con, index_col=['stockID'])
+    return pd.read_sql(f'SELECT * FROM {tablename}', con, index_col=['stockID'], parse_dates=['date'])
     con.close()
 
 
