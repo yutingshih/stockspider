@@ -10,6 +10,7 @@ import pandas as pd
 from typing import Union, List
 NumType = Union[int, str]
 
+
 def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     ''' Get daily price from www.twse.com.tw and return a DataFrame '''
 
@@ -40,6 +41,21 @@ def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     return df
 
 
+def getManyDays(path, num_days, day=date.today()):
+    while num_days:
+        print(f'{day} ', end='')
+        df = crawler.getDailyPrice(day.strftime('%Y%m%d'))
+        if crawler.saveDataSQL(df, path, 'daily_price', 'append'):
+            num_days -= 1
+            print(f'downloaded')
+        else:
+            print(f'skipped')
+        day -= timedelta(days=1)
+        time.sleep(1)
+    print(f'done')
+    return df
+
+
 def getMonthlyReport(year: int, month: int) -> pd.DataFrame:
     ''' Get monthly report from mops.twse.com.tw and return a DataFrame '''
 
@@ -64,6 +80,7 @@ def getMonthlyReport(year: int, month: int) -> pd.DataFrame:
 
     return df
 
+
 def getFinancialReport(stockID: NumType, year: NumType, season: NumType) -> List[pd.DataFrame]:
     year %= 1911
     form_data = parseFormData(f'step=1&DEBUG=&CO_ID={stockID}&SYEAR={year}&SSEASON={season}&REPORT_ID=C')
@@ -71,6 +88,7 @@ def getFinancialReport(stockID: NumType, year: NumType, season: NumType) -> List
     res = req.post('https://mops.twse.com.tw/server-java/t164sb01', data=form_data)
     res.encoding = 'big5'
     return pd.read_html(res.text)
+
 
 def saveDataCSV(data: pd.DataFrame, filename: str, overwrite: bool = True) -> bool:
     ''' save a DataFrame as csv file and return wheather it is successfully saved '''
