@@ -3,7 +3,7 @@
 
 # Some useful functions used to crawl TWSE data
 
-import os, io, sqlite3
+import os, io, time, sqlite3
 from datetime import date, timedelta
 import requests as req
 import pandas as pd
@@ -38,21 +38,6 @@ def getDailyPrice(day: str = 'yesterday') -> pd.DataFrame:
     df = df.apply(lambda row: pd.to_numeric(row, errors='coerce'))
     df.dropna(axis=1, how='all', inplace=True)
 
-    return df
-
-
-def getManyDays(path, num_days, day=date.today()):
-    while num_days:
-        print(f'{day} ', end='')
-        df = crawler.getDailyPrice(day.strftime('%Y%m%d'))
-        if crawler.saveDataSQL(df, path, 'daily_price', 'append'):
-            num_days -= 1
-            print(f'downloaded')
-        else:
-            print(f'skipped')
-        day -= timedelta(days=1)
-        time.sleep(1)
-    print(f'done')
     return df
 
 
@@ -125,6 +110,21 @@ def loadDataSQL(fileName: str, tablename: str) -> pd.DataFrame:
 
 def parseFormData(src: str) -> dict:
     return dict([prm.split('=') for prm in src.split('&')])
+
+
+def getManyDays(path, num_days, day=date.today()):
+    while num_days:
+        print(f'{day} ', end='')
+        df = getDailyPrice(day.strftime('%Y%m%d'))
+        if saveDataSQL(df, path, 'daily_price', 'append'):
+            num_days -= 1
+            print(f'downloaded')
+        else:
+            print(f'skipped')
+        day -= timedelta(days=1)
+        time.sleep(1)
+    print(f'done')
+    return df
 
 
 if __name__ == '__main__':
